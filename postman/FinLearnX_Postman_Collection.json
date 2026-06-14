@@ -1,0 +1,1138 @@
+{
+  "info": {
+    "_postman_id": "finlearnx-api-v1",
+    "name": "FinLearnX API Collection",
+    "description": "Complete REST API collection for FinLearnX – Personal Finance Learning & Trading Simulator.\n\n**Base URL:** http://localhost:8081\n**Auth:** JWT Bearer Token\n\n**How to use:**\n1. Run POST /api/auth/login to get JWT token\n2. Copy token value from response data.token\n3. Set collection variable jwt_token = <your_token>\n4. All secured endpoints will use Bearer {{jwt_token}} automatically",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "jwt_token", "value": "", "type": "string", "description": "Set after login" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "description": "Authentication endpoints — Register, Login, Health Check. No JWT required.",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/auth/register", "host": ["{{base_url}}"], "path": ["api","auth","register"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Arjun Sharma\",\n  \"email\": \"arjun@finlearnx.com\",\n  \"password\": \"Test@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Register a new user account.\n\n**DTO:** RegisterRequest\n- name (NotBlank)\n- email (Email, NotBlank)\n- password (NotBlank, min 6 chars)\n\n**Returns:** JWT token + user details"
+          },
+          "response": [
+            {
+              "name": "200 Success",
+              "status": "OK", "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Account created successfully\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9...\",\n    \"type\": \"Bearer\",\n    \"userId\": 1,\n    \"name\": \"Arjun Sharma\",\n    \"email\": \"arjun@finlearnx.com\",\n    \"role\": \"USER\",\n    \"walletBalance\": 100000.0\n  }\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "status": "Bad Request", "code": 400,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"data\": {\n    \"email\": \"Invalid email format\",\n    \"password\": \"Password must be at least 6 characters\"\n  }\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Token present', () => { const r = pm.response.json(); pm.expect(r.data.token).to.be.a('string'); pm.collectionVariables.set('jwt_token', r.data.token); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"arjun@finlearnx.com\",\n  \"password\": \"Test@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Login and receive JWT token.\n\n**DTO:** AuthRequest\n- email (Email, NotBlank)\n- password (NotBlank)\n\n**Auto-saves** jwt_token to collection variable."
+          },
+          "response": [
+            {
+              "name": "200 Success",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhcmp1bkBmaW5sZWFybnguY29tIiwiaWF0IjoxNzE3MjM0NTYwLCJleHAiOjE3MTczMjA5NjB9.abc123\",\n    \"type\": \"Bearer\",\n    \"userId\": 1,\n    \"name\": \"Arjun Sharma\",\n    \"email\": \"arjun@finlearnx.com\",\n    \"role\": \"USER\",\n    \"walletBalance\": 100000.0\n  }\n}"
+            },
+            {
+              "name": "401 Invalid Credentials",
+              "status": "Unauthorized", "code": 401,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password\"\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const r = pm.response.json();",
+            "if (r.data && r.data.token) {",
+            "  pm.collectionVariables.set('jwt_token', r.data.token);",
+            "  pm.test('JWT token saved', () => pm.expect(r.data.token).to.be.a('string').and.not.empty);",
+            "}"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Login — Invalid Credentials",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api","auth","login"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"wrong@test.com\",\n  \"password\": \"wrongpassword\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/auth/health", "host": ["{{base_url}}"], "path": ["api","auth","health"] },
+            "description": "Public endpoint — verify API is running. No authentication required."
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('API running', () => { const r = pm.response.json(); pm.expect(r.success).to.be.true; });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "👤 Users",
+      "description": "User profile management. All endpoints require JWT authentication.",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/user/profile", "host": ["{{base_url}}"], "path": ["api","user","profile"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns the authenticated user's profile including wallet balance and role."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Arjun Sharma\",\n    \"email\": \"arjun@finlearnx.com\",\n    \"role\": \"USER\",\n    \"walletBalance\": 95762.50,\n    \"createdAt\": \"2026-06-01T10:00:00\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has profile data', () => { const r = pm.response.json(); pm.expect(r.data).to.have.property('email'); pm.expect(r.data).to.have.property('walletBalance'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base_url}}/api/user/profile", "host": ["{{base_url}}"], "path": ["api","user","profile"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Arjun Kumar Sharma\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Update authenticated user's display name."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Arjun Kumar Sharma\",\n    \"email\": \"arjun@finlearnx.com\",\n    \"role\": \"USER\",\n    \"walletBalance\": 95762.50\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Name updated', () => { const r = pm.response.json(); pm.expect(r.data.name).to.equal('Arjun Kumar Sharma'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Unauthorized Access (No Token)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/user/profile", "host": ["{{base_url}}"], "path": ["api","user","profile"] },
+            "description": "Verify 401 is returned when no JWT token is provided."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "📈 Stocks",
+      "description": "Stock market data endpoints. GET /public/* are open (no auth). All others require JWT.",
+      "item": [
+        {
+          "name": "Get All Stocks (Live Prices)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/stocks/public/list", "host": ["{{base_url}}"], "path": ["api","stocks","public","list"] },
+            "description": "Public endpoint. Returns all available stocks with live simulated prices. No authentication required."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"symbol\": \"RELIANCE\", \"name\": \"Reliance Industries\", \"sector\": \"Energy\", \"exchange\": \"NSE\", \"price\": 2851.30, \"changePercent\": 1.22, \"change\": 34.67 },\n    { \"symbol\": \"TCS\", \"name\": \"Tata Consultancy Services\", \"sector\": \"IT\", \"exchange\": \"NSE\", \"price\": 3884.20, \"changePercent\": -0.72, \"change\": -28.15 }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns stocks array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); pm.expect(r.data.length).to.be.greaterThan(0); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Single Stock by Symbol",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/stocks/public/RELIANCE",
+              "host": ["{{base_url}}"], "path": ["api","stocks","public","RELIANCE"]
+            },
+            "description": "Public endpoint. Get details for a specific stock by symbol (e.g. RELIANCE, TCS, AAPL)."
+          },
+          "response": [
+            {
+              "name": "200 Success", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"symbol\": \"RELIANCE\",\n    \"name\": \"Reliance Industries\",\n    \"sector\": \"Energy\",\n    \"exchange\": \"NSE\",\n    \"price\": 2847.50,\n    \"changePercent\": 1.22,\n    \"change\": 34.20\n  }\n}"
+            },
+            {
+              "name": "200 Stock Not Found",
+              "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Stock not found: INVALID\"\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has symbol', () => { const r = pm.response.json(); pm.expect(r.data.symbol).to.equal('RELIANCE'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Stock Price History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/stocks/public/TCS/history?days=30",
+              "host": ["{{base_url}}"], "path": ["api","stocks","public","TCS","history"],
+              "query": [{ "key": "days", "value": "30", "description": "Number of days of history (default: 30)" }]
+            },
+            "description": "Public endpoint. Returns simulated OHLCV price history for a stock.\n\n**Path variable:** symbol (e.g. TCS, RELIANCE, AAPL)\n**Query param:** days (1–365, default 30)"
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"date\": \"2026-05-01\", \"price\": 3850.00, \"volume\": 4200000 },\n    { \"date\": \"2026-05-02\", \"price\": 3878.50, \"volume\": 3900000 },\n    { \"date\": \"2026-05-03\", \"price\": 3912.75, \"volume\": 3200000 }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns history array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); pm.expect(r.data.length).to.be.greaterThan(0); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get 7-Day History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/stocks/public/AAPL/history?days=7", "host": ["{{base_url}}"], "path": ["api","stocks","public","AAPL","history"], "query": [{ "key": "days", "value": "7" }] }
+          }
+        },
+        {
+          "name": "Get 1-Year History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/stocks/public/NVDA/history?days=365", "host": ["{{base_url}}"], "path": ["api","stocks","public","NVDA","history"], "query": [{ "key": "days", "value": "365" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💹 Trading",
+      "description": "Stock trading simulation — Buy/Sell stocks, view portfolio & transactions. All require JWT.",
+      "item": [
+        {
+          "name": "Execute Trade — BUY",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/trading/trade", "host": ["{{base_url}}"], "path": ["api","trading","trade"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"RELIANCE\",\n  \"stockName\": \"Reliance Industries\",\n  \"quantity\": 5,\n  \"price\": 2847.50,\n  \"type\": \"BUY\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Buy shares of a stock. Deducts from wallet balance.\n\n**DTO:** TradeRequest\n- symbol (NotBlank)\n- stockName (NotBlank)\n- quantity (NotNull, min 1)\n- price (NotNull, positive)\n- type: BUY or SELL"
+          },
+          "response": [
+            {
+              "name": "200 Success", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Bought 5 shares of RELIANCE\",\n  \"data\": {\n    \"id\": 1,\n    \"symbol\": \"RELIANCE\",\n    \"stockName\": \"Reliance Industries\",\n    \"type\": \"BUY\",\n    \"quantity\": 5,\n    \"price\": 2847.50,\n    \"totalAmount\": 14237.50,\n    \"createdAt\": \"2026-06-11T17:00:00\"\n  }\n}"
+            },
+            {
+              "name": "400 Insufficient Balance",
+              "status": "Bad Request", "code": 400,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Insufficient wallet balance. Required: ₹284750.0, Available: ₹100000.0\"\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Trade type BUY', () => { const r = pm.response.json(); pm.expect(r.data.type).to.equal('BUY'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Execute Trade — SELL",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/trading/trade", "host": ["{{base_url}}"], "path": ["api","trading","trade"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"symbol\": \"RELIANCE\",\n  \"stockName\": \"Reliance Industries\",\n  \"quantity\": 2,\n  \"price\": 2900.00,\n  \"type\": \"SELL\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Sold 2 shares of RELIANCE\",\n  \"data\": {\n    \"id\": 2,\n    \"symbol\": \"RELIANCE\",\n    \"type\": \"SELL\",\n    \"quantity\": 2,\n    \"price\": 2900.00,\n    \"totalAmount\": 5800.00,\n    \"createdAt\": \"2026-06-11T17:05:00\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Trade type SELL', () => { const r = pm.response.json(); pm.expect(r.data.type).to.equal('SELL'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Execute Trade — Insufficient Balance (Negative Test)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/trading/trade", "host": ["{{base_url}}"], "path": ["api","trading","trade"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"symbol\": \"AAPL\",\n  \"stockName\": \"Apple Inc.\",\n  \"quantity\": 99999,\n  \"price\": 189.84,\n  \"type\": \"BUY\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400 - Insufficient balance', () => pm.response.to.have.status(400));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Execute Trade — Validation Error (quantity=0)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/trading/trade", "host": ["{{base_url}}"], "path": ["api","trading","trade"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"symbol\": \"TCS\",\n  \"stockName\": \"TCS\",\n  \"quantity\": 0,\n  \"price\": 3912.75,\n  \"type\": \"BUY\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400 - Validation', () => pm.response.to.have.status(400));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Portfolio",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/trading/portfolio", "host": ["{{base_url}}"], "path": ["api","trading","portfolio"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns all current holdings for the authenticated user."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"symbol\": \"RELIANCE\",\n      \"stockName\": \"Reliance Industries\",\n      \"quantity\": 3,\n      \"averagePrice\": 2862.50\n    },\n    {\n      \"id\": 2,\n      \"symbol\": \"TCS\",\n      \"stockName\": \"Tata Consultancy Services\",\n      \"quantity\": 2,\n      \"averagePrice\": 3912.75\n    }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Portfolio is array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/trading/transactions", "host": ["{{base_url}}"], "path": ["api","trading","transactions"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns all buy/sell transaction history for the authenticated user, newest first."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 2, \"symbol\": \"RELIANCE\", \"type\": \"SELL\", \"quantity\": 2, \"price\": 2900.00, \"totalAmount\": 5800.00, \"createdAt\": \"2026-06-11T17:05:00\" },\n    { \"id\": 1, \"symbol\": \"RELIANCE\", \"type\": \"BUY\", \"quantity\": 5, \"price\": 2847.50, \"totalAmount\": 14237.50, \"createdAt\": \"2026-06-11T17:00:00\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has transactions', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array').and.not.empty; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/trading/wallet", "host": ["{{base_url}}"], "path": ["api","trading","wallet"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{ \"success\": true, \"data\": 91562.50 }"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Balance is number', () => { const r = pm.response.json(); pm.expect(r.data).to.be.a('number'); });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "💳 Expenses",
+      "description": "Budget tracker expense management. All endpoints require JWT.",
+      "item": [
+        {
+          "name": "Add Expense",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/expenses", "host": ["{{base_url}}"], "path": ["api","expenses"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Food\",\n  \"description\": \"Grocery shopping at D-Mart\",\n  \"amount\": 2400,\n  \"date\": \"2026-06-11\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Add a new expense entry.\n\nValid categories: Food, Travel, Education, Shopping, Entertainment, Health, Utilities, Others"
+          },
+          "response": [
+            {
+              "name": "200 Success", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Expense added\",\n  \"data\": {\n    \"id\": 1,\n    \"category\": \"Food\",\n    \"description\": \"Grocery shopping at D-Mart\",\n    \"amount\": 2400.0,\n    \"date\": \"2026-06-11\",\n    \"createdAt\": \"2026-06-11T18:00:00\"\n  }\n}"
+            },
+            {
+              "name": "400 Bad Request",
+              "status": "Bad Request", "code": 400,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"An unexpected error occurred: For input string: \\\"abc\\\"\"\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Category correct', () => { const r = pm.response.json(); pm.expect(r.data.category).to.equal('Food'); pm.expect(r.data.amount).to.equal(2400); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Add Expense — Travel",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/expenses", "host": ["{{base_url}}"], "path": ["api","expenses"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"Travel\",\n  \"description\": \"Uber ride to office\",\n  \"amount\": 350,\n  \"date\": \"2026-06-11\"\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Get All Expenses",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/expenses", "host": ["{{base_url}}"], "path": ["api","expenses"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 2, \"category\": \"Travel\", \"description\": \"Uber ride\", \"amount\": 350.0, \"date\": \"2026-06-11\" },\n    { \"id\": 1, \"category\": \"Food\", \"description\": \"Grocery shopping\", \"amount\": 2400.0, \"date\": \"2026-06-11\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Expenses by Date Range",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/expenses/range?start=2026-06-01&end=2026-06-30",
+              "host": ["{{base_url}}"], "path": ["api","expenses","range"],
+              "query": [
+                { "key": "start", "value": "2026-06-01", "description": "Start date (YYYY-MM-DD)" },
+                { "key": "end",   "value": "2026-06-30", "description": "End date (YYYY-MM-DD)" }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Category Totals",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/expenses/categories", "host": ["{{base_url}}"], "path": ["api","expenses","categories"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns total spending per category as a map."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"Food\": 2400.0,\n    \"Travel\": 350.0,\n    \"Entertainment\": 800.0,\n    \"Shopping\": 3200.0\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns category map', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('object'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Total Expenses",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/expenses/total", "host": ["{{base_url}}"], "path": ["api","expenses","total"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{ "name": "200 Success", "status": "OK", "code": 200, "_postman_previewlanguage": "json", "body": "{ \"success\": true, \"data\": 6750.0 }" }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Total is number', () => { const r = pm.response.json(); pm.expect(r.data).to.be.a('number'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/expenses/1", "host": ["{{base_url}}"], "path": ["api","expenses","1"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Delete an expense by ID. Only the owner can delete their own expenses."
+          },
+          "response": [
+            { "name": "200 Success", "status": "OK", "code": 200, "_postman_previewlanguage": "json", "body": "{ \"success\": true, \"message\": \"Expense deleted\" }" },
+            { "name": "400 Not Found / Unauthorized", "status": "Bad Request", "code": 400, "_postman_previewlanguage": "json", "body": "{ \"success\": false, \"message\": \"Expense not found\" }" }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "🧮 SIP Calculator",
+      "description": "SIP investment calculation and history. All endpoints require JWT.",
+      "item": [
+        {
+          "name": "Calculate SIP Returns",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/sip/calculate", "host": ["{{base_url}}"], "path": ["api","sip","calculate"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monthlyAmount\": 5000,\n  \"annualRate\": 12,\n  \"durationYears\": 10\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Calculate SIP maturity value without saving.\n\n**DTO:** SipRequest\n- monthlyAmount (positive)\n- annualRate (1–50)\n- durationYears (1–40)"
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"monthlyAmount\": 5000,\n    \"annualRate\": 12,\n    \"durationYears\": 10,\n    \"totalInvested\": 600000.0,\n    \"expectedReturns\": 561694.98,\n    \"futureCorpus\": 1161694.98,\n    \"wealthMultiple\": 1.94,\n    \"yearlyBreakdown\": {\n      \"1\": { \"invested\": 60000.0, \"corpus\": 63839.90, \"gains\": 3839.90 },\n      \"5\": { \"invested\": 300000.0, \"corpus\": 411695.36, \"gains\": 111695.36 },\n      \"10\": { \"invested\": 600000.0, \"corpus\": 1161694.98, \"gains\": 561694.98 }\n    }\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Future corpus > invested', () => { const r = pm.response.json(); pm.expect(r.data.futureCorpus).to.be.greaterThan(r.data.totalInvested); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Calculate SIP — Step-Up Scenario (25yr)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/sip/calculate", "host": ["{{base_url}}"], "path": ["api","sip","calculate"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"monthlyAmount\": 10000,\n  \"annualRate\": 14,\n  \"durationYears\": 25\n}", "options": { "raw": { "language": "json" } } }
+          }
+        },
+        {
+          "name": "Calculate SIP — Validation Error",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/sip/calculate", "host": ["{{base_url}}"], "path": ["api","sip","calculate"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"monthlyAmount\": -100,\n  \"annualRate\": 200,\n  \"durationYears\": 0\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400 - Validation', () => pm.response.to.have.status(400));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Save SIP Calculation",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/sip/save", "host": ["{{base_url}}"], "path": ["api","sip","save"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"monthlyAmount\": 10000,\n  \"annualRate\": 12,\n  \"durationYears\": 20\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Calculate and persist the SIP result to the database."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"SIP calculation saved\",\n  \"data\": {\n    \"id\": 1,\n    \"monthlyAmount\": 10000.0,\n    \"annualRate\": 12.0,\n    \"durationYears\": 20,\n    \"totalInvested\": 2400000.0,\n    \"expectedReturns\": 7594920.0,\n    \"futureCorpus\": 9994920.0,\n    \"calculatedAt\": \"2026-06-11T18:00:00\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get SIP Calculation History",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/sip/history", "host": ["{{base_url}}"], "path": ["api","sip","history"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 1, \"monthlyAmount\": 10000.0, \"annualRate\": 12.0, \"durationYears\": 20, \"futureCorpus\": 9994920.0, \"calculatedAt\": \"2026-06-11T18:00:00\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('History is array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); pm.expect(r.data.length).to.be.greaterThan(0); });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "📚 Courses",
+      "description": "Learning hub course progress tracking. All endpoints require JWT.",
+      "item": [
+        {
+          "name": "Get All Course Progress (Map)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/courses/progress", "host": ["{{base_url}}"], "path": ["api","courses","progress"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns a map of courseId → progress data for all courses."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sip-basics\": { \"percent\": 100, \"pagesRead\": 15, \"completed\": true, \"quizScore\": 80 },\n    \"budget-basics\": { \"percent\": 60, \"pagesRead\": 9, \"completed\": false, \"quizScore\": 0 }\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns object map', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('object'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Save Course Progress",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/courses/progress/sip-basics", "host": ["{{base_url}}"], "path": ["api","courses","progress","sip-basics"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"percent\": 60,\n  \"pagesRead\": 9\n}", "options": { "raw": { "language": "json" } } },
+            "description": "Save reading progress for a course. courseId is a path variable."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Progress saved\",\n  \"data\": {\n    \"id\": 1,\n    \"courseId\": \"sip-basics\",\n    \"progressPercent\": 60,\n    \"pagesRead\": 9,\n    \"completed\": false,\n    \"quizScore\": null\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Progress saved correctly', () => { const r = pm.response.json(); pm.expect(r.data.progressPercent).to.equal(60); pm.expect(r.data.pagesRead).to.equal(9); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Complete Course (100%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/courses/progress/sip-basics", "host": ["{{base_url}}"], "path": ["api","courses","progress","sip-basics"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"percent\": 100,\n  \"pagesRead\": 15\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "response": [{
+            "name": "200 Completion Notification Triggered",
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Progress saved\",\n  \"data\": {\n    \"courseId\": \"sip-basics\",\n    \"progressPercent\": 100,\n    \"pagesRead\": 15,\n    \"completed\": true\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Course completed', () => { const r = pm.response.json(); pm.expect(r.data.completed).to.be.true; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Save Quiz Score — Pass (80%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/courses/quiz/sip-basics", "host": ["{{base_url}}"], "path": ["api","courses","quiz","sip-basics"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"score\": 80\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Badge earned message', () => { const r = pm.response.json(); pm.expect(r.message).to.include('Badge'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Save Quiz Score — Fail (40%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/courses/quiz/budget-basics", "host": ["{{base_url}}"], "path": ["api","courses","quiz","budget-basics"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"score\": 40\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Course Progress List",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/courses/progress/list", "host": ["{{base_url}}"], "path": ["api","courses","progress","list"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "🧠 Quiz",
+      "description": "Quiz submission and results. All endpoints require JWT.",
+      "item": [
+        {
+          "name": "Submit Quiz — Pass (score=16/20 = 80%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/quiz/submit", "host": ["{{base_url}}"], "path": ["api","quiz","submit"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": \"sip-basics\",\n  \"score\": 16,\n  \"totalQuestions\": 20\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Submit quiz result. score/totalQuestions determine pass/fail (>=60% to pass).\n\nValid courseIds: sip-basics, budget-basics, intro-stocks, personal-finance, saving-strategies, financial-discipline, investment-planning, portfolio-basics, intermediate-stocks, crypto-fundamentals, expense-management, financial-goals"
+          },
+          "response": [{
+            "name": "200 Passed", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Congratulations! You passed the quiz!\",\n  \"data\": {\n    \"id\": 1,\n    \"courseId\": \"sip-basics\",\n    \"score\": 16,\n    \"totalQuestions\": 20,\n    \"percentage\": 80.0,\n    \"passed\": true,\n    \"completedAt\": \"2026-06-11T18:30:00\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Quiz passed', () => { const r = pm.response.json(); pm.expect(r.data.passed).to.be.true; pm.expect(r.data.percentage).to.equal(80); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Submit Quiz — Fail (score=8/20 = 40%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/quiz/submit", "host": ["{{base_url}}"], "path": ["api","quiz","submit"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"courseId\": \"intro-stocks\",\n  \"score\": 8,\n  \"totalQuestions\": 20\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "response": [{
+            "name": "200 Failed", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Quiz submitted. Keep learning!\",\n  \"data\": {\n    \"courseId\": \"intro-stocks\",\n    \"score\": 8,\n    \"totalQuestions\": 20,\n    \"percentage\": 40.0,\n    \"passed\": false\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Quiz failed', () => { const r = pm.response.json(); pm.expect(r.data.passed).to.be.false; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Submit Quiz — Perfect Score (20/20 = 100%)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/quiz/submit", "host": ["{{base_url}}"], "path": ["api","quiz","submit"] },
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"courseId\": \"financial-discipline\",\n  \"score\": 20,\n  \"totalQuestions\": 20\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Perfect score passed', () => { const r = pm.response.json(); pm.expect(r.data.percentage).to.equal(100); pm.expect(r.data.passed).to.be.true; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get All Quiz Results",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/quiz/results", "host": ["{{base_url}}"], "path": ["api","quiz","results"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns all quiz results for the authenticated user, newest first."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 3, \"courseId\": \"financial-discipline\", \"score\": 20, \"totalQuestions\": 20, \"percentage\": 100.0, \"passed\": true, \"completedAt\": \"2026-06-11T18:32:00\" },\n    { \"id\": 2, \"courseId\": \"intro-stocks\", \"score\": 8, \"totalQuestions\": 20, \"percentage\": 40.0, \"passed\": false, \"completedAt\": \"2026-06-11T18:31:00\" },\n    { \"id\": 1, \"courseId\": \"sip-basics\", \"score\": 16, \"totalQuestions\": 20, \"percentage\": 80.0, \"passed\": true, \"completedAt\": \"2026-06-11T18:30:00\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns results array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array').and.not.empty; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Best Result for Course",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/quiz/results/sip-basics", "host": ["{{base_url}}"], "path": ["api","quiz","results","sip-basics"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Get the most recent quiz result for a specific course."
+          },
+          "response": [
+            {
+              "name": "200 Found", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"courseId\": \"sip-basics\",\n    \"score\": 16,\n    \"totalQuestions\": 20,\n    \"percentage\": 80.0,\n    \"passed\": true,\n    \"completedAt\": \"2026-06-11T18:30:00\"\n  }\n}"
+            },
+            {
+              "name": "200 Not Found",
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"No quiz result found for this course\"\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has courseId', () => { const r = pm.response.json(); if (r.success) pm.expect(r.data.courseId).to.equal('sip-basics'); });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "👑 Premium",
+      "description": "Individual premium course unlocking. Each course is unlocked separately for $100. All require JWT.",
+      "item": [
+        {
+          "name": "Get Unlocked Courses",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/premium/unlocked", "host": ["{{base_url}}"], "path": ["api","premium","unlocked"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns list of course IDs the user has unlocked. Empty array if none unlocked."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{ \"success\": true, \"data\": [\"value-investing\", \"wealth-psychology\"] }"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Check Course Access — value-investing",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/premium/check/value-investing", "host": ["{{base_url}}"], "path": ["api","premium","check","value-investing"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Check if the user has access to a specific premium course."
+          },
+          "response": [
+            {
+              "name": "200 Locked", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courseId\": \"value-investing\",\n    \"unlocked\": false,\n    \"message\": \"Course not unlocked. Purchase for $100.\"\n  }\n}"
+            },
+            {
+              "name": "200 Unlocked", "status": "OK", "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courseId\": \"value-investing\",\n    \"unlocked\": true,\n    \"message\": \"Access granted\"\n  }\n}"
+            }
+          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Has unlocked field', () => { const r = pm.response.json(); pm.expect(r.data).to.have.property('unlocked'); pm.expect(r.data).to.have.property('courseId'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Unlock Course — value-investing ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/value-investing", "host": ["{{base_url}}"], "path": ["api","premium","unlock","value-investing"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Unlock a single premium course. Only THIS course is unlocked — others remain locked.\n\nAvailable courseIds:\n- value-investing\n- wealth-psychology\n- growth-investing\n- trading-psychology\n- financial-freedom\n- technical-analysis-pro"
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"message\": \"Course unlocked successfully\",\n  \"data\": {\n    \"id\": 1,\n    \"courseId\": \"value-investing\",\n    \"paymentStatus\": \"COMPLETED\",\n    \"amountPaid\": 100.0,\n    \"unlockedAt\": \"2026-06-11T18:40:00\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Course unlocked', () => { const r = pm.response.json(); pm.expect(r.data.courseId).to.equal('value-investing'); pm.expect(r.data.paymentStatus).to.equal('COMPLETED'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Unlock Course — wealth-psychology ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/wealth-psychology", "host": ["{{base_url}}"], "path": ["api","premium","unlock","wealth-psychology"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Only wealth-psychology unlocked', () => { const r = pm.response.json(); pm.expect(r.data.courseId).to.equal('wealth-psychology'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Verify Other Course Still Locked",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/premium/check/trading-psychology", "host": ["{{base_url}}"], "path": ["api","premium","check","trading-psychology"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Verify that unlocking value-investing and wealth-psychology did NOT unlock trading-psychology (individual unlock validation)."
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('trading-psychology still locked', () => { const r = pm.response.json(); pm.expect(r.data.unlocked).to.be.false; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Unlock Course — growth-investing ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/growth-investing", "host": ["{{base_url}}"], "path": ["api","premium","unlock","growth-investing"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          }
+        },
+        {
+          "name": "Unlock Course — trading-psychology ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/trading-psychology", "host": ["{{base_url}}"], "path": ["api","premium","unlock","trading-psychology"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          }
+        },
+        {
+          "name": "Unlock Course — financial-freedom ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/financial-freedom", "host": ["{{base_url}}"], "path": ["api","premium","unlock","financial-freedom"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          }
+        },
+        {
+          "name": "Unlock Course — technical-analysis-pro ($100)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}/api/premium/unlock/technical-analysis-pro", "host": ["{{base_url}}"], "path": ["api","premium","unlock","technical-analysis-pro"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "description": "Real-time notification management. All endpoints require JWT.",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/notifications", "host": ["{{base_url}}"], "path": ["api","notifications"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Returns all notifications for authenticated user, newest first.\n\nNotification types: buy, sell, profit, loss, info, warning"
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 3, \"type\": \"info\", \"title\": \"Course Completed! 🎉\", \"message\": \"You completed: sip-basics. Take the quiz!\", \"read\": false, \"createdAt\": \"2026-06-11T18:35:00\" },\n    { \"id\": 2, \"type\": \"sell\", \"title\": \"Sold RELIANCE\", \"message\": \"Sold 2 shares @ ₹2900.00 · P&L: +₹105\", \"read\": false, \"createdAt\": \"2026-06-11T17:05:00\" },\n    { \"id\": 1, \"type\": \"buy\", \"title\": \"Bought RELIANCE\", \"message\": \"Bought 5 shares of Reliance Industries @ ₹2847.50 · Total: ₹14,238\", \"read\": true, \"createdAt\": \"2026-06-11T17:00:00\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns notifications array', () => { const r = pm.response.json(); pm.expect(r.data).to.be.an('array'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/notifications/unread", "host": ["{{base_url}}"], "path": ["api","notifications","unread"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"id\": 3, \"type\": \"info\", \"title\": \"Course Completed!\", \"message\": \"You completed: sip-basics\", \"read\": false, \"createdAt\": \"2026-06-11T18:35:00\" },\n    { \"id\": 2, \"type\": \"sell\", \"title\": \"Sold RELIANCE\", \"message\": \"Sold 2 shares @ ₹2900.00\", \"read\": false, \"createdAt\": \"2026-06-11T17:05:00\" }\n  ]\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('All unread', () => { const r = pm.response.json(); r.data.forEach(n => pm.expect(n.read).to.be.false); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/notifications/count", "host": ["{{base_url}}"], "path": ["api","notifications","count"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "response": [{ "name": "200 Success", "status": "OK", "code": 200, "_postman_previewlanguage": "json", "body": "{ \"success\": true, \"data\": { \"unreadCount\": 2 } }" }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Count is number', () => { const r = pm.response.json(); pm.expect(r.data.unreadCount).to.be.a('number'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Mark Single Notification as Read",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base_url}}/api/notifications/2/read", "host": ["{{base_url}}"], "path": ["api","notifications","2","read"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Mark a specific notification as read by its ID."
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{base_url}}/api/notifications/read-all", "host": ["{{base_url}}"], "path": ["api","notifications","read-all"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Verify Unread Count = 0",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/notifications/count", "host": ["{{base_url}}"], "path": ["api","notifications","count"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Unread count is 0', () => { const r = pm.response.json(); pm.expect(r.data.unreadCount).to.equal(0); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Clear All Notifications",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/notifications", "host": ["{{base_url}}"], "path": ["api","notifications"] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }],
+            "description": "Delete all notifications for the authenticated user."
+          },
+          "response": [{ "name": "200 Success", "status": "OK", "code": 200, "_postman_previewlanguage": "json", "body": "{ \"success\": true, \"message\": \"All notifications cleared\" }" }],
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        }
+      ]
+    },
+    {
+      "name": "🔎 Search",
+      "description": "Global search across courses and stocks. /public endpoint is open, /api/search requires JWT.",
+      "item": [
+        {
+          "name": "Search — SIP (Public, No Auth)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=SIP", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "SIP" }] },
+            "description": "Public search endpoint. No JWT required. Returns matching courses and stocks."
+          },
+          "response": [{
+            "name": "200 Success", "status": "OK", "code": 200,
+            "_postman_previewlanguage": "json",
+            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"courses\": [\n      { \"id\": \"sip-basics\", \"title\": \"SIP Basics\", \"type\": \"basic\", \"icon\": \"📈\", \"path\": \"/learn/sip-basics\" }\n    ],\n    \"stocks\": [],\n    \"total\": 1,\n    \"query\": \"SIP\"\n  }\n}"
+          }],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('SIP course found', () => { const r = pm.response.json(); pm.expect(r.data.courses.length).to.be.greaterThan(0); pm.expect(r.data.courses[0].id).to.include('sip'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Search — RELIANCE Stock (Public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=RELIANCE", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "RELIANCE" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Reliance found in stocks', () => { const r = pm.response.json(); pm.expect(r.data.stocks.length).to.be.greaterThan(0); pm.expect(r.data.stocks[0].symbol).to.equal('RELIANCE'); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Search — value investing (Premium Course)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=value", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "value" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Premium course found', () => { const r = pm.response.json(); pm.expect(r.data.courses.some(c => c.type === 'premium')).to.be.true; });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Search — IT Sector",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=IT", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "IT" }] }
+          }
+        },
+        {
+          "name": "Search — No Results",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=xyznotfound999", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "xyznotfound999" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Zero results', () => { const r = pm.response.json(); pm.expect(r.data.total).to.equal(0); });"
+          ], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Search — Authenticated (Requires JWT)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search?q=budget", "host": ["{{base_url}}"], "path": ["api","search"], "query": [{ "key": "q", "value": "budget" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"], "type": "text/javascript" }}]
+        },
+        {
+          "name": "Search — Empty Query",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/search/public?q=", "host": ["{{base_url}}"], "path": ["api","search","public"], "query": [{ "key": "q", "value": "" }] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Empty results for blank query', () => { const r = pm.response.json(); pm.expect(r.data.total).to.equal(0); });"
+          ], "type": "text/javascript" }}]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+.pq-page { min-height: 100vh; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; padding: 24px; }
+
+.pq-intro { width: 100%; max-width: 580px; background: rgba(255,255,255,.04); border: 1px solid rgba(245,158,11,.2); border-radius: var(--radius-2xl); overflow: hidden; }
+.pqi-banner { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; text-align: center; }
+.pqi-icon { font-size: 44px; }
+.pqi-badge { background: rgba(0,0,0,.3); color: #f59e0b; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+.pqi-banner h2 { font-size: 22px; font-weight: 800; color: white; }
+.pqi-banner p { font-size: 13px; color: rgba(255,255,255,.75); }
+.pqi-body { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+.pqi-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pqi-stat { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,.04); border-radius: var(--radius-md); font-size: 13px; color: var(--text-secondary); }
+.pqi-info h4 { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.pqi-info p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.pqi-start { width: 100%; padding: 14px; border-radius: var(--radius-md); font-size: 15px; font-weight: 800; color: white; border: none; cursor: pointer; transition: all .3s; }
+.pqi-start:hover { opacity: .9; transform: translateY(-2px); }
+.pqi-back { background: transparent; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; text-align: center; transition: color .2s; }
+.pqi-back:hover { color: #f59e0b; }
+
+.pq-container { width: 100%; max-width: 680px; background: rgba(255,255,255,.04); border: 1px solid rgba(245,158,11,.15); border-radius: var(--radius-2xl); overflow: hidden; }
+.pq-header { padding: 22px 28px 18px; }
+.pq-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.pq-course-label { font-size: 13px; color: rgba(255,255,255,.85); font-weight: 600; }
+.pq-timer { display: flex; flex-direction: column; align-items: center; border: 2px solid; border-radius: 10px; padding: 5px 12px; min-width: 50px; transition: all .3s; }
+.pq-timer-val { font-size: 20px; font-weight: 800; line-height: 1; }
+.pq-timer-s { font-size: 10px; font-weight: 600; opacity: .8; }
+.pq-dots { display: flex; gap: 4px; flex-wrap: wrap; }
+.pq-dot { width: 8px; height: 8px; border-radius: 50%; transition: all .3s; }
+.pq-timer-bar { height: 4px; background: rgba(255,255,255,.1); }
+.pq-body { padding: 28px 32px; }
+.pq-counter { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+.pq-question { font-size: 19px; font-weight: 700; color: var(--text-primary); line-height: 1.5; margin-bottom: 22px; }
+.pq-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.pq-opt { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: var(--radius-lg); background: rgba(255,255,255,.04); border: 2px solid var(--border-color); color: var(--text-primary); font-size: 14px; text-align: left; cursor: pointer; transition: all .2s; width: 100%; }
+.pq-opt:hover:not(:disabled) { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); }
+.pq-opt.selected { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.5); }
+.pq-opt.correct { background: rgba(0,255,136,.08); border-color: #00ff88; }
+.pq-opt.wrong { background: rgba(255,71,87,.08); border-color: #ff4757; }
+.pq-letter { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; color: white; transition: background .2s; }
+.pq-opt-text { flex: 1; }
+.pq-footer { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+
+.pq-result { width: 100%; max-width: 640px; background: rgba(255,255,255,.04); border: 1px solid rgba(245,158,11,.2); border-radius: var(--radius-2xl); overflow: hidden; }
+.pqr-banner { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; text-align: center; }
+.pqr-banner h2 { font-size: 26px; font-weight: 800; color: white; }
+.pqr-banner p { font-size: 13px; color: rgba(255,255,255,.75); }
+.pqr-body { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; }
+.pqr-score { width: 110px; height: 110px; border-radius: 50%; border: 4px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; }
+.pqr-score-val { font-size: 30px; font-weight: 800; }
+.pqr-score-sub { font-size: 11px; color: var(--text-muted); }
+.pqr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pqr-stat { display: flex; justify-content: space-between; padding: 11px 14px; background: rgba(255,255,255,.04); border-radius: var(--radius-md); font-size: 13px; }
+.pqr-stat span:first-child { color: var(--text-secondary); }
+.pqr-stat span:last-child { font-weight: 700; color: var(--text-primary); }
+.pqr-badge-earned { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg,rgba(245,158,11,.15),rgba(217,119,6,.08)); border: 1px solid rgba(245,158,11,.3); border-radius: var(--radius-lg); padding: 16px 20px; }
+.pqrb-title { font-size: 15px; font-weight: 800; color: #f59e0b; }
+.pqrb-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.pqr-review h4 { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+.pqr-review-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.pqrr-item { padding: 10px 12px; border-radius: var(--radius-md); border-left: 3px solid; }
+.pqrr-item.correct { background: rgba(0,255,136,.05); border-color: #00ff88; }
+.pqrr-item.wrong { background: rgba(255,71,87,.05); border-color: #ff4757; }
+.pqrr-q { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px; }
+.pqrr-a { display: flex; flex-direction: column; gap: 2px; }
+.ca { font-size: 11px; color: #00ff88; font-weight: 600; }
+.wa { font-size: 11px; color: #ff4757; }
+.pqr-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.pqr-actions button { flex: 1; padding: 11px; min-width: 100px; }

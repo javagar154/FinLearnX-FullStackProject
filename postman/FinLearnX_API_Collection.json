@@ -1,0 +1,478 @@
+{
+  "info": {
+    "name": "FinLearnX API Collection",
+    "description": "Complete REST API collection for FinLearnX fintech platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api" },
+    { "key": "token",   "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/register",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"name\":\"Arjun Sharma\",\"email\":\"arjun@test.com\",\"password\":\"test123\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","const r=pm.response.json();if(r.data&&r.data.token){pm.collectionVariables.set('token',r.data.token);pm.test('Token saved',()=>pm.expect(r.data.token).to.be.a('string'));}"]}}]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"email\":\"arjun@test.com\",\"password\":\"test123\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","const r=pm.response.json();if(r.data&&r.data.token){pm.collectionVariables.set('token',r.data.token);}","pm.test('JWT token present',()=>pm.expect(pm.collectionVariables.get('token')).to.not.be.empty);"]}}]
+        },
+        {
+          "name": "Login - Invalid Credentials",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"email\":\"wrong@test.com\",\"password\":\"wrongpass\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 401',()=>pm.response.to.have.status(401));"]}}]
+        },
+        {
+          "name": "Health Check",
+          "request": {"method":"GET","url":"{{baseUrl}}/auth/health"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('API Running',()=>pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "2. User Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/user/profile",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Has user data',()=>{const r=pm.response.json();pm.expect(r.data).to.have.property('email');});"]}}]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/user/profile",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"name\":\"Arjun Kumar Sharma\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Unauthorized Access (No Token)",
+          "request": {"method":"GET","url":"{{baseUrl}}/user/profile"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 401',()=>pm.response.to.have.status(401));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "3. Stock Simulator",
+      "item": [
+        {
+          "name": "Get All Stocks (Public)",
+          "request": {"method":"GET","url":"{{baseUrl}}/stocks/public/list"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns stocks array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');pm.expect(r.data.length).to.be.greaterThan(0);});"]}}]
+        },
+        {
+          "name": "Get Single Stock",
+          "request": {"method":"GET","url":"{{baseUrl}}/stocks/public/RELIANCE"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Has symbol',()=>{const r=pm.response.json();pm.expect(r.data.symbol).to.equal('RELIANCE');});"]}}]
+        },
+        {
+          "name": "Get Stock Price History",
+          "request": {"method":"GET","url":"{{baseUrl}}/stocks/public/TCS/history?days=30"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns history array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');pm.expect(r.data.length).to.be.greaterThan(0);});"]}}]
+        },
+        {
+          "name": "Buy Stock",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/trading/trade",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"symbol\":\"RELIANCE\",\"stockName\":\"Reliance Industries\",\"quantity\":5,\"price\":2847.50,\"type\":\"BUY\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Trade executed',()=>{const r=pm.response.json();pm.expect(r.success).to.be.true;pm.expect(r.data.type).to.equal('BUY');});"]}}]
+        },
+        {
+          "name": "Sell Stock",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/trading/trade",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"symbol\":\"RELIANCE\",\"stockName\":\"Reliance Industries\",\"quantity\":2,\"price\":2900.00,\"type\":\"SELL\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Sell executed',()=>{const r=pm.response.json();pm.expect(r.data.type).to.equal('SELL');});"]}}]
+        },
+        {
+          "name": "Buy Stock - Insufficient Balance",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/trading/trade",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"symbol\":\"AAPL\",\"stockName\":\"Apple Inc.\",\"quantity\":99999,\"price\":189.84,\"type\":\"BUY\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 400 - Insufficient balance',()=>pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "Get Portfolio",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/trading/portfolio",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns portfolio array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/trading/transactions",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns transactions',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');pm.expect(r.data.length).to.be.greaterThan(0);});"]}}]
+        },
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/trading/wallet",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Balance is number',()=>{const r=pm.response.json();pm.expect(r.data).to.be.a('number');});"]}}]
+        }
+      ]
+    },
+    {
+      "name": "4. Budget Tracker",
+      "item": [
+        {
+          "name": "Add Expense",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/expenses",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"category\":\"Food\",\"description\":\"Grocery shopping\",\"amount\":2400,\"date\":\"2026-05-20\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Expense added',()=>{const r=pm.response.json();pm.expect(r.data.category).to.equal('Food');pm.expect(r.data.amount).to.equal(2400);});"]}}]
+        },
+        {
+          "name": "Add Expense - Validation Error",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/expenses",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"category\":\"Food\",\"description\":\"\",\"amount\":-100,\"date\":\"2026-05-20\"}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 400 - Validation error',()=>pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "Get All Expenses",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/expenses",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns expenses',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        },
+        {
+          "name": "Get Category Totals",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/expenses/categories",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns category map',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('object');});"]}}]
+        },
+        {
+          "name": "Get Total Expenses",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/expenses/total",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Total is number',()=>{const r=pm.response.json();pm.expect(r.data).to.be.a('number');});"]}}]
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/expenses/1",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "5. SIP Calculator",
+      "item": [
+        {
+          "name": "Calculate SIP",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sip/calculate",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"monthlyAmount\":5000,\"annualRate\":12,\"durationYears\":10}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Has future corpus',()=>{const r=pm.response.json();pm.expect(r.data.futureCorpus).to.be.a('number');pm.expect(r.data.futureCorpus).to.be.greaterThan(r.data.totalInvested);});"]}}]
+        },
+        {
+          "name": "Calculate SIP - Validation Error",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sip/calculate",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"monthlyAmount\":-100,\"annualRate\":200,\"durationYears\":0}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 400 - Validation',()=>pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "Save SIP Calculation",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sip/save",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"monthlyAmount\":10000,\"annualRate\":14,\"durationYears\":20}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Get SIP History",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/sip/history",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns history',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        }
+      ]
+    },
+    {
+      "name": "6. Learning Hub",
+      "item": [
+        {
+          "name": "Get All Course Progress",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/courses/progress",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns progress map',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('object');});"]}}]
+        },
+        {
+          "name": "Save Course Progress",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/courses/progress/sip-basics",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"percent\":60,\"pagesRead\":9}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Progress saved',()=>{const r=pm.response.json();pm.expect(r.data.progressPercent).to.equal(60);pm.expect(r.data.pagesRead).to.equal(9);});"]}}]
+        },
+        {
+          "name": "Complete Course (100%)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/courses/progress/sip-basics",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"percent\":100,\"pagesRead\":15}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Course completed',()=>{const r=pm.response.json();pm.expect(r.data.completed).to.be.true;});"]}}]
+        },
+        {
+          "name": "Submit Quiz Score - Pass",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/courses/quiz/sip-basics",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"score\":80}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Quiz passed',()=>{const r=pm.response.json();pm.expect(r.message).to.include('passed');pm.expect(r.data.quizScore).to.equal(80);});"]}}]
+        },
+        {
+          "name": "Submit Quiz Score - Fail",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/courses/quiz/budget-basics",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"score\":40}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Quiz failed message',()=>{const r=pm.response.json();pm.expect(r.data.quizScore).to.equal(40);});"]}}]
+        },
+        {
+          "name": "Get Progress List",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/courses/progress/list",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        }
+      ]
+    },
+    {
+      "name": "7. Premium Courses",
+      "item": [
+        {
+          "name": "Get Unlocked Courses",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/premium/unlocked",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns array of course IDs',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        },
+        {
+          "name": "Check Course Access - Locked",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/premium/check/value-investing",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Access check returned',()=>{const r=pm.response.json();pm.expect(r.data).to.have.property('unlocked');pm.expect(r.data).to.have.property('courseId');});"]}}]
+        },
+        {
+          "name": "Unlock Premium Course",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/premium/unlock/value-investing",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Course unlocked',()=>{const r=pm.response.json();pm.expect(r.data.courseId).to.equal('value-investing');pm.expect(r.data.paymentStatus).to.equal('COMPLETED');});"]}}]
+        },
+        {
+          "name": "Check Course Access - Unlocked",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/premium/check/value-investing",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Course now unlocked',()=>{const r=pm.response.json();pm.expect(r.data.unlocked).to.be.true;});"]}}]
+        },
+        {
+          "name": "Unlock Another Course (Individual)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/premium/unlock/wealth-psychology",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Only this course unlocked',()=>{const r=pm.response.json();pm.expect(r.data.courseId).to.equal('wealth-psychology');});"]}}]
+        },
+        {
+          "name": "Verify Other Course Still Locked",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/premium/check/trading-psychology",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Other course still locked',()=>{const r=pm.response.json();pm.expect(r.data.unlocked).to.be.false;});"]}}]
+        }
+      ]
+    },
+    {
+      "name": "8. Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns notifications array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');});"]}}]
+        },
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications/unread",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('All returned are unread',()=>{const r=pm.response.json();r.data.forEach(n=>pm.expect(n.read).to.be.false);});"]}}]
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications/count",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Count is number',()=>{const r=pm.response.json();pm.expect(r.data.unreadCount).to.be.a('number');});"]}}]
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/notifications/read-all",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Verify Unread Count = 0",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications/count",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Unread count is 0',()=>{const r=pm.response.json();pm.expect(r.data.unreadCount).to.equal(0);});"]}}]
+        },
+        {
+          "name": "Clear All Notifications",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/notifications",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "9. Global Search",
+      "item": [
+        {
+          "name": "Search - SIP",
+          "request": {"method":"GET","url":"{{baseUrl}}/search/public?q=SIP"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns SIP courses',()=>{const r=pm.response.json();pm.expect(r.data.courses.length).to.be.greaterThan(0);pm.expect(r.data.courses[0].title).to.include('SIP');});"]}}]
+        },
+        {
+          "name": "Search - RELIANCE Stock",
+          "request": {"method":"GET","url":"{{baseUrl}}/search/public?q=RELIANCE"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns Reliance stock',()=>{const r=pm.response.json();pm.expect(r.data.stocks.length).to.be.greaterThan(0);pm.expect(r.data.stocks[0].symbol).to.equal('RELIANCE');});"]}}]
+        },
+        {
+          "name": "Search - Premium Course",
+          "request": {"method":"GET","url":"{{baseUrl}}/search/public?q=value+investing"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns premium course',()=>{const r=pm.response.json();pm.expect(r.data.courses.some(c=>c.type==='premium')).to.be.true;});"]}}]
+        },
+        {
+          "name": "Search - No Results",
+          "request": {"method":"GET","url":"{{baseUrl}}/search/public?q=xyznotfound123"},
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Empty results',()=>{const r=pm.response.json();pm.expect(r.data.total).to.equal(0);});"]}}]
+        },
+        {
+          "name": "Search - Authenticated",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/search?q=budget",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "10. Quiz System",
+      "item": [
+        {
+          "name": "Submit Quiz - Pass (80%)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/quiz/submit",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"courseId\":\"intro-stocks\",\"score\":16,\"totalQuestions\":20}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Quiz passed',()=>{const r=pm.response.json();pm.expect(r.data.passed).to.be.true;pm.expect(r.data.percentage).to.equal(80);});"]}}]
+        },
+        {
+          "name": "Submit Quiz - Fail (40%)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/quiz/submit",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\"courseId\":\"crypto-fundamentals\",\"score\":8,\"totalQuestions\":20}"}
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Quiz failed',()=>{const r=pm.response.json();pm.expect(r.data.passed).to.be.false;pm.expect(r.data.percentage).to.equal(40);});"]}}]
+        },
+        {
+          "name": "Get All Quiz Results",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/quiz/results",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns results array',()=>{const r=pm.response.json();pm.expect(r.data).to.be.an('array');pm.expect(r.data.length).to.be.greaterThan(0);});"]}}]
+        },
+        {
+          "name": "Get Best Result for Course",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/quiz/results/intro-stocks",
+            "header": [{"key":"Authorization","value":"Bearer {{token}}"}]
+          },
+          "event": [{"listen":"test","script":{"exec":["pm.test('Status 200',()=>pm.response.to.have.status(200));","pm.test('Returns best result',()=>{const r=pm.response.json();pm.expect(r.data.courseId).to.equal('intro-stocks');});"]}}]
+        }
+      ]
+    }
+  ]
+}
