@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'react-toastify';
 import { STOCKS, generatePriceHistory, generateIntradayData } from '../data/stocks';
-import { addNotification } from '../utils/notifications';
+import { tradingService } from '../services/tradingService';
+import { useAuth } from '../context/AuthContext';
 import './StockDetail.css';
 
 const StockDetail = () => {
@@ -12,8 +13,11 @@ const StockDetail = () => {
   const [stock, setStock] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [timeframe, setTimeframe] = useState('1D');
+  const { refreshWallet } = useAuth();
   const [tradeType, setTradeType] = useState('buy');
   const [qty, setQty] = useState(1);
+  const [tradeLoading, setTradeLoading] = useState(false);
+  // wallet shown from auth context; portfolio from API
   const [wallet, setWallet] = useState(parseFloat(localStorage.getItem('finlearnx_wallet') || '100000'));
   const [portfolio, setPortfolio] = useState(JSON.parse(localStorage.getItem('finlearnx_portfolio') || '[]'));
 
@@ -41,46 +45,37 @@ const StockDetail = () => {
   const totalCost = qty * (stock?.price || 0);
   const isProfit = chartData.length > 1 && chartData[chartData.length - 1].price >= chartData[0].price;
 
-  const handleTrade = () => {
-    if (!stock) return;
-    if (tradeType === 'buy') {
-      if (totalCost > wallet) { toast.error('Insufficient wallet balance!'); return; }
-      const newWallet = wallet - totalCost;
-      const existing = portfolio.find(h => h.symbol === symbol);
-      let newPortfolio;
-      if (existing) {
-        newPortfolio = portfolio.map(h => h.symbol === symbol
-          ? { ...h, qty: h.qty + qty, avgPrice: ((h.avgPrice * h.qty) + totalCost) / (h.qty + qty) }
-          : h
-        );
-      } else {
-        newPortfolio = [...portfolio, { symbol, name: stock.name, qty, avgPrice: stock.price }];
-      }
-      setWallet(newWallet);
-      setPortfolio(newPortfolio);
-      localStorage.setItem('finlearnx_wallet', newWallet.toString());
-      localStorage.setItem('finlearnx_portfolio', JSON.stringify(newPortfolio));
-      toast.success(`✅ Bought ${qty} shares of ${symbol} @ ₹${stock.price.toLocaleString('en-IN')}`);
-      addNotification('buy', `Bought ${symbol}`, `Bought ${qty} share${qty > 1 ? 's' : ''} of ${stock.name} @ ₹${stock.price.toLocaleString('en-IN')} · Total: ₹${totalCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
-    } else {
-      if (!holding || holding.qty < qty) { toast.error('Insufficient shares to sell!'); return; }
-      const proceeds = qty * stock.price;
-      const newWallet = wallet + proceeds;
-      const newPortfolio = portfolio.map(h => h.symbol === symbol
-        ? { ...h, qty: h.qty - qty }
-        : h
-      ).filter(h => h.qty > 0);
-      setWallet(newWallet);
-      setPortfolio(newPortfolio);
-      localStorage.setItem('finlearnx_wallet', newWallet.toString());
-      localStorage.setItem('finlearnx_portfolio', JSON.stringify(newPortfolio));
-      toast.success(`✅ Sold ${qty} shares of ${symbol} @ ₹${stock.price.toLocaleString('en-IN')}`);
-      const pnl = (stock.price - (holding?.avgPrice || stock.price)) * qty;
-      addNotification(
-        pnl >= 0 ? 'sell' : 'loss',
-        `Sold ${symbol}`,
-        `Sold ${qty} share${qty > 1 ? 's' : ''} of ${stock.name} @ ₹${stock.price.toLocaleString('en-IN')} · P&L: ${pnl >= 0 ? '+' : ''}₹${pnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+  const handleTrade = async () => {
+    if (!stock || tradeLoading) return;
+    setTradeLoading(true);
+    try {
+      await tradingService.executeTrade(
+        symbol, stock.name, qty, stock.price,
+        tradeType === 'buy' ? 'BUY' : 'SELL'
       );
+      const label = tradeType === 'buy' ? 'Bought' : 'Sold';
+      toast.success(`✅ ${label} ${qty} share${qty > 1 ? 's' : ''} of ${symbol} @ ₹${stock.price.toLocaleString('en-IN')}`);
+
+      // Refresh wallet balance from backend and persist locally
+      const newBalance = await tradingService.getWallet();
+      setWallet(newBalance);
+      localStorage.setItem('finlearnx_wallet', String(newBalance));
+      refreshWallet();
+
+      // Refresh portfolio from backend
+      const newPortfolio = await tradingService.getPortfolio();
+      // Map backend response to shape used by UI
+      const mapped = newPortfolio.map(h => ({
+        symbol: h.symbol, name: h.stockName,
+        qty: h.quantity, avgPrice: h.averagePrice,
+      }));
+      setPortfolio(mapped);
+      localStorage.setItem('finlearnx_portfolio', JSON.stringify(mapped));
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Trade failed';
+      toast.error(msg);
+    } finally {
+      setTradeLoading(false);
     }
   };
 
@@ -223,8 +218,10 @@ const StockDetail = () => {
               <button
                 className={`execute-btn ${tradeType}`}
                 onClick={handleTrade}
+                disabled={tradeLoading}
               >
-                {tradeType === 'buy' ? `Buy ${qty} Share${qty > 1 ? 's' : ''}` : `Sell ${qty} Share${qty > 1 ? 's' : ''}`}
+                {tradeLoading ? <span className="btn-spinner"></span> :
+                  tradeType === 'buy' ? `Buy ${qty} Share${qty > 1 ? 's' : ''}` : `Sell ${qty} Share${qty > 1 ? 's' : ''}`}
               </button>
 
               <p className="trade-disclaimer">

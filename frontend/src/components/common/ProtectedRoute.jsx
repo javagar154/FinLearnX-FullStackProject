@@ -2,6 +2,13 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+// A JWT has exactly 3 dot-separated Base64 parts
+const isValidJwt = (token) => {
+  if (!token) return false;
+  if (token.startsWith('demo_token_')) return false;
+  return token.split('.').length === 3;
+};
+
 const ProtectedRoute = ({ children }) => {
   const { loading } = useAuth();
   const token = localStorage.getItem('finlearnx_token');
@@ -28,7 +35,13 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!token) {
+  // No token OR stale demo/invalid token → send to login
+  if (!token || !isValidJwt(token)) {
+    // Clear any stale data
+    if (token && !isValidJwt(token)) {
+      localStorage.removeItem('finlearnx_token');
+      localStorage.removeItem('finlearnx_user');
+    }
     return <Navigate to="/login" replace />;
   }
 

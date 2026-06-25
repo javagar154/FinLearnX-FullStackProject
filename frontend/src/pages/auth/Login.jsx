@@ -5,11 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
 const Login = () => {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm]       = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -25,18 +25,25 @@ const Login = () => {
       toast.success('Welcome back to FinLearnX!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error('Invalid credentials. Try demo@finlearnx.com');
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error  ||
+        'Invalid email or password';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
+  // Demo account — pre-registered in DB by the seed or first register call
   const handleDemo = async () => {
     setLoading(true);
     try {
-      await login('demo@finlearnx.com', 'demo123');
+      await login('demo@finlearnx.com', 'Demo@1234');
       toast.success('Logged in with demo account!');
       navigate('/dashboard');
+    } catch {
+      toast.info('Demo account not set up yet. Register one at /signup with demo@finlearnx.com / Demo@1234');
     } finally {
       setLoading(false);
     }
@@ -51,15 +58,15 @@ const Login = () => {
       </div>
 
       <div className="auth-container">
-        {/* Left Panel */}
+        {/* Left Panel — unchanged */}
         <div className="auth-left">
           <div className="auth-brand">
             <div className="brand-logo">FX</div>
             <span className="brand-name">FinLearnX</span>
           </div>
-          <h2 className="auth-tagline">Your Complete<br /><span className="gradient-text">Finance Learning</span><br />& Trading Platform</h2>
+          <h2 className="auth-tagline">Your Complete<br /><span className="gradient-text">Finance Learning</span><br />&amp; Trading Platform</h2>
           <div className="auth-features">
-            {['📈 50+ Virtual Stocks to Trade', '📚 6 Finance Learning Courses', '🧮 SIP & Budget Calculator', '🏆 Quizzes & Progress Tracking'].map(f => (
+            {['📈 50+ Virtual Stocks to Trade', '📚 Finance Learning Courses', '🧮 SIP & Budget Calculator', '🏆 Quizzes & Progress Tracking'].map(f => (
               <div key={f} className="feature-item">{f}</div>
             ))}
           </div>
@@ -82,11 +89,9 @@ const Login = () => {
                 <div className="input-wrapper">
                   <span className="input-icon">✉️</span>
                   <input
-                    type="email"
-                    name="email"
+                    type="email" name="email"
                     placeholder="you@example.com"
-                    value={form.email}
-                    onChange={handleChange}
+                    value={form.email} onChange={handleChange}
                     autoComplete="email"
                   />
                 </div>
@@ -97,11 +102,9 @@ const Login = () => {
                 <div className="input-wrapper">
                   <span className="input-icon">🔒</span>
                   <input
-                    type={showPass ? 'text' : 'password'}
-                    name="password"
+                    type={showPass ? 'text' : 'password'} name="password"
                     placeholder="Enter your password"
-                    value={form.password}
-                    onChange={handleChange}
+                    value={form.password} onChange={handleChange}
                     autoComplete="current-password"
                   />
                   <button type="button" className="toggle-pass" onClick={() => setShowPass(!showPass)}>
@@ -126,7 +129,7 @@ const Login = () => {
             </form>
 
             <p className="auth-switch">
-              Don't have an account? <Link to="/signup">Create one free</Link>
+              Don&apos;t have an account? <Link to="/signup">Create one free</Link>
             </p>
           </div>
         </div>

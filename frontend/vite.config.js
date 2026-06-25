@@ -7,10 +7,18 @@ export default defineConfig({
     extensions: ['.jsx', '.js', '.tsx', '.ts', '.json'],
   },
   server: {
-    port: 3000,
+    port: 3001,
     open: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   build: {
     outDir: 'build',
-  },
+    chunkSizeWarningLimit: 2000,
+  }
 });

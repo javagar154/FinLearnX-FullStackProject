@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PREMIUM_COURSES } from '../data/premiumCourses';
+import { premiumService } from '../services/premiumService';
+import { toast } from 'react-toastify';
 import './PremiumHub.css';
 
 // Individual course unlock helpers
@@ -29,15 +31,33 @@ const PremiumHub = () => {
 
   useEffect(() => {
     migrateLegacy();
-    setUnlocked(getUnlocked());
+    // Load unlocked courses from backend
+    premiumService.getUnlocked()
+      .then(ids => {
+        setUnlocked(Array.isArray(ids) ? ids : []);
+        // Keep localStorage in sync for PremiumReader access checks
+        localStorage.setItem('flx_unlocked_courses', JSON.stringify(Array.isArray(ids) ? ids : []));
+      })
+      .catch(() => {
+        // Fallback to localStorage if backend unreachable
+        setUnlocked(getUnlocked());
+      });
   }, []);
 
-  const handleUnlock = (courseId) => {
-    unlockCourse(courseId);
-    const updated = getUnlocked();
-    setUnlocked(updated);
-    setModal(null);
-    navigate(`/premium/${courseId}`);
+  const handleUnlock = async (courseId) => {
+    try {
+      await premiumService.unlockCourse(courseId);
+      // Refresh full unlocked list from backend
+      const ids = await premiumService.getUnlocked();
+      const list = Array.isArray(ids) ? ids : [];
+      setUnlocked(list);
+      localStorage.setItem('flx_unlocked_courses', JSON.stringify(list));
+      setModal(null);
+      navigate(`/premium/${courseId}`);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to unlock course';
+      toast.error(msg);
+    }
   };
 
   const handleCourseClick = (course) => {

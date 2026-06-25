@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import GlobalSearch from '../common/GlobalSearch';
 import NotificationBell from '../common/NotificationBell';
+import { useAuth } from '../../context/AuthContext';
 import './Topbar.css';
 
 const pageTitles = {
@@ -16,6 +17,8 @@ const pageTitles = {
 
 const Topbar = ({ onMenuClick }) => {
   const location = useLocation();
+  const { getUser } = useAuth();
+  const user = getUser();
 
   const getTitle = () => {
     const path = location.pathname;
@@ -28,7 +31,9 @@ const Topbar = ({ onMenuClick }) => {
     return 'FinLearnX';
   };
 
-  const walletBalance = parseFloat(localStorage.getItem('finlearnx_wallet') || '100000');
+  // Live wallet: prefer auth context (updated after trades), fallback to localStorage
+  const walletBalance = user?.walletBalance
+    ?? parseFloat(localStorage.getItem('finlearnx_wallet') || '100000');
 
   return (
     <header className="topbar">

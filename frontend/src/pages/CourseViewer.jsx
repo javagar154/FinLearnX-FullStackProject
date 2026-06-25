@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BASIC_COURSES, INTERMEDIATE_COURSES } from '../data/courses';
 import { FREE_CONTENT } from '../data/freeContent';
+import { courseService } from '../services/courseService';
 import { toast } from 'react-toastify';
 import './CourseViewer.css';
 
@@ -80,6 +81,8 @@ const CourseViewer = () => {
     const newProg = { ...progress, [courseId]: pct };
     setProgress(newProg);
     localStorage.setItem('flx_progress', JSON.stringify(newProg));
+    // Sync to backend (fire-and-forget)
+    courseService.saveProgress(courseId, pct, updated.size).catch(() => {});
     if (currentPage < pages.length - 1) goToPage(currentPage + 1, 'right');
     else toast.success('🎉 Course complete! Take the quiz to earn your badge.');
   };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getNotifications, markAllRead, clearNotifications, getUnreadCount } from '../../utils/notifications';
+import { notificationApiService } from '../../services/notificationApiService';
 import './NotificationBell.css';
 
 const typeConfig = {
@@ -56,7 +57,11 @@ const NotificationBell = () => {
 
   const handleOpen = () => {
     setOpen(o => !o);
-    if (!open && unread > 0) { markAllRead(); }
+    if (!open && unread > 0) {
+      markAllRead();
+      // Also sync to backend (fire-and-forget)
+      notificationApiService.markAllRead().catch(() => {});
+    }
   };
 
   return (

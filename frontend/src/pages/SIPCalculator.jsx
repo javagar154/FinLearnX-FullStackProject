@@ -1,13 +1,29 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { sipService } from '../services/sipService';
+import { toast } from 'react-toastify';
 import './SIPCalculator.css';
 
 const SIPCalculator = () => {
   const [monthly, setMonthly] = useState(5000);
   const [rate, setRate] = useState(12);
   const [years, setYears] = useState(10);
-  const [mode, setMode] = useState('sip'); // sip or lumpsum
+  const [mode, setMode] = useState('sip');
   const [lumpsum, setLumpsum] = useState(100000);
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveSIP = async () => {
+    if (mode !== 'sip') { toast.info('Only SIP calculations can be saved'); return; }
+    setSaving(true);
+    try {
+      await sipService.saveCalculation(monthly, rate, years);
+      toast.success('✅ SIP calculation saved!');
+    } catch {
+      toast.error('Failed to save calculation');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const sipResult = useMemo(() => {
     const n = years * 12;
@@ -179,6 +195,12 @@ const SIPCalculator = () => {
               <span><span className="dot green"></span>Returns: {formatCrore(result.gains)}</span>
             </div>
           </div>
+
+          {mode === 'sip' && (
+            <button className="sip-save-btn" onClick={handleSaveSIP} disabled={saving}>
+              {saving ? <span className="btn-spinner"></span> : '💾 Save Calculation'}
+            </button>
+          )}
         </div>
       </div>
 

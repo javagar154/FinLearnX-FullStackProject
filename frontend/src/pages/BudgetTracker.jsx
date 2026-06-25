@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { toast } from 'react-toastify';
+import { expenseService } from '../services/expenseService';
 import './BudgetTracker.css';
 
 const CATEGORIES = [
@@ -30,12 +31,29 @@ const defaultExpenses = [
 ];
 
 const BudgetTracker = () => {
-  const [expenses, setExpenses] = useState(() => JSON.parse(localStorage.getItem('finlearnx_expenses') || JSON.stringify(defaultExpenses)));
+  const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState(() => parseInt(localStorage.getItem('flx_monthly_income') || '60000'));
   const [incomeInput, setIncomeInput] = useState('');
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [apiLoading, setApiLoading] = useState(true);
   const [form, setForm] = useState({ category: 'Food', description: '', amount: '', date: new Date().toISOString().split('T')[0] });
+
+  // Load expenses from backend on mount
+  useEffect(() => {
+    expenseService.getExpenses()
+      .then(data => setExpenses(Array.isArray(data) ? data : []))
+      .catch(() => {
+        // Fallback to localStorage / defaults — never crash on API error
+        try {
+          const cached = localStorage.getItem('finlearnx_expenses');
+          setExpenses(cached ? JSON.parse(cached) : defaultExpenses);
+        } catch {
+          setExpenses(defaultExpenses);
+        }
+      })
+      .finally(() => setApiLoading(false));
+  }, []);
 
   const openIncomeModal = () => {
     setIncomeInput(income.toString());
@@ -77,23 +95,31 @@ const BudgetTracker = () => {
     savings: i === activeMonth ? savings : Math.floor(Math.random() * 15000) + 10000,
   }));
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.description || !form.amount) { toast.error('Fill all fields'); return; }
-    const newExpense = { id: Date.now(), ...form, amount: parseFloat(form.amount) };
-    const updated = [newExpense, ...expenses];
-    setExpenses(updated);
-    localStorage.setItem('finlearnx_expenses', JSON.stringify(updated));
-    setForm({ category: 'Food', description: '', amount: '', date: new Date().toISOString().split('T')[0] });
-    setShowForm(false);
-    toast.success('Expense added!');
+    try {
+      const saved = await expenseService.addExpense(
+        form.category, form.description,
+        parseFloat(form.amount), form.date
+      );
+      setExpenses(prev => [saved, ...prev]);
+      setForm({ category: 'Food', description: '', amount: '', date: new Date().toISOString().split('T')[0] });
+      setShowForm(false);
+      toast.success('Expense added!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add expense');
+    }
   };
 
-  const handleDelete = (id) => {
-    const updated = expenses.filter(e => e.id !== id);
-    setExpenses(updated);
-    localStorage.setItem('finlearnx_expenses', JSON.stringify(updated));
-    toast.success('Expense deleted');
+  const handleDelete = async (id) => {
+    try {
+      await expenseService.deleteExpense(id);
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      toast.success('Expense deleted');
+    } catch {
+      toast.error('Failed to delete expense');
+    }
   };
 
   return (

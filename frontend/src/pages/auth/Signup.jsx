@@ -5,10 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
 const Signup = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm]       = useState({ name: '', email: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -26,13 +26,24 @@ const Signup = () => {
       toast.error('Password must be at least 6 characters');
       return;
     }
+
     setLoading(true);
     try {
       await signup(form.name, form.email, form.password);
       toast.success('Account created! Welcome to FinLearnX 🎉');
       navigate('/dashboard');
     } catch (err) {
-      toast.error('Signup failed. Please try again.');
+      // Backend may return field-level validation errors as { data: { email: "...", name: "..." } }
+      // or a plain message string
+      const errData = err.response?.data;
+      if (errData?.data && typeof errData.data === 'object') {
+        // Show first validation error
+        const firstMsg = Object.values(errData.data)[0];
+        toast.error(firstMsg || 'Registration failed');
+      } else {
+        const msg = errData?.message || 'Registration failed. Please try again.';
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -54,7 +65,7 @@ const Signup = () => {
           </div>
           <h2 className="auth-tagline">Start Your<br /><span className="gradient-text">Financial Journey</span><br />Today — Free!</h2>
           <div className="auth-features">
-            {['✅ Free virtual trading with ₹1,00,000', '✅ 6 comprehensive finance courses', '✅ Real-time simulated market data', '✅ SIP & Budget planning tools', '✅ Quizzes & completion certificates'].map(f => (
+            {['✅ Free virtual trading with ₹1,00,000', '✅ Finance courses (Basic + Intermediate)', '✅ Real-time simulated market data', '✅ SIP & Budget planning tools', '✅ Quizzes & completion certificates'].map(f => (
               <div key={f} className="feature-item">{f}</div>
             ))}
           </div>
@@ -73,7 +84,6 @@ const Signup = () => {
                   <input type="text" name="name" placeholder="Arjun Sharma" value={form.name} onChange={handleChange} />
                 </div>
               </div>
-
               <div className="form-group">
                 <label>Email Address</label>
                 <div className="input-wrapper">
@@ -81,7 +91,6 @@ const Signup = () => {
                   <input type="email" name="email" placeholder="you@example.com" value={form.email} onChange={handleChange} />
                 </div>
               </div>
-
               <div className="form-group">
                 <label>Password</label>
                 <div className="input-wrapper">
@@ -89,7 +98,6 @@ const Signup = () => {
                   <input type="password" name="password" placeholder="Min. 6 characters" value={form.password} onChange={handleChange} />
                 </div>
               </div>
-
               <div className="form-group">
                 <label>Confirm Password</label>
                 <div className="input-wrapper">

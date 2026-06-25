@@ -6,6 +6,8 @@ import {
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { STOCKS } from '../data/stocks';
+import { tradingService } from '../services/tradingService';
+import { expenseService } from '../services/expenseService';
 import { getTimeGreeting, getNotifications } from '../utils/notifications';
 import './Dashboard.css';
 
@@ -18,7 +20,7 @@ const portfolioGrowth = [
   { month: 'Nov', value: 128000 }, { month: 'Dec', value: 142500 },
 ];
 
-const expenseData = [
+const DEFAULT_EXPENSE_DATA = [
   { name: 'Food', value: 8000, color: '#6366f1' },
   { name: 'Travel', value: 4500, color: '#8b5cf6' },
   { name: 'Shopping', value: 6200, color: '#10b981' },
@@ -58,7 +60,10 @@ const Dashboard = () => {
   const { getUser } = useAuth();
   const navigate = useNavigate();
   const user = getUser();
-  const [portfolio] = useState(JSON.parse(localStorage.getItem('finlearnx_portfolio') || '[]'));
+  const [portfolio, setPortfolio] = useState(JSON.parse(localStorage.getItem('finlearnx_portfolio') || '[]'));
+  const [walletBalance, setWalletBalance] = useState(parseFloat(localStorage.getItem('finlearnx_wallet') || '100000'));
+  const [recentTx, setRecentTx] = useState([]);
+  const [categoryTotals, setCategoryTotals] = useState({});
   const [greeting, setGreeting] = useState(getTimeGreeting());
   const [recentNotifs, setRecentNotifs] = useState([]);
 
@@ -75,15 +80,57 @@ const Dashboard = () => {
     return () => window.removeEventListener('flx_notification', refresh);
   }, []);
 
+  // Load live data from backend
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [holdings, balance, txList, catTotals] = await Promise.allSettled([
+          tradingService.getPortfolio(),
+          tradingService.getWallet(),
+          tradingService.getTransactions(),
+          expenseService.getCategoryTotals(),
+        ]);
+        // Only update state when promises resolved successfully
+        if (holdings.status === 'fulfilled' && Array.isArray(holdings.value)) {
+          const mapped = holdings.value.map(h => ({
+            symbol: h.symbol, name: h.stockName,
+            qty: h.quantity, avgPrice: h.averagePrice,
+          }));
+          setPortfolio(mapped);
+          localStorage.setItem('finlearnx_portfolio', JSON.stringify(mapped));
+        }
+        if (balance.status === 'fulfilled') {
+          setWalletBalance(balance.value);
+          localStorage.setItem('finlearnx_wallet', String(balance.value));
+        }
+        if (txList.status === 'fulfilled' && Array.isArray(txList.value)) {
+          setRecentTx(txList.value.slice(0, 5));
+        }
+        if (catTotals.status === 'fulfilled' && catTotals.value) {
+          setCategoryTotals(catTotals.value);
+        }
+      } catch {
+        // Silently fallback — dashboard renders with cached localStorage data
+      }
+    };
+    loadDashboard();
+  }, []);
+
   const topGainers = STOCKS.filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
   const topLosers = STOCKS.filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
 
   const portfolioValue = portfolio.reduce((sum, h) => {
     const stock = STOCKS.find(s => s.symbol === h.symbol);
-    return sum + (stock ? stock.price * h.qty : 0);
+    return sum + (stock ? stock.price * (h.qty || h.quantity || 0) : 0);
   }, 0);
 
-  const walletBalance = parseFloat(localStorage.getItem('finlearnx_wallet') || '100000');
+  // Build expense pie data from backend category totals, fallback to defaults
+  const expenseData = Object.keys(categoryTotals).length > 0
+    ? Object.entries(categoryTotals).map(([name, value], i) => ({
+        name, value,
+        color: ['#6366f1','#8b5cf6','#10b981','#06b6d4','#f59e0b','#ec4899','#84cc16','#94a3b8'][i % 8]
+      })).filter(e => e.value > 0)
+    : DEFAULT_EXPENSE_DATA;
 
   return (
     <div className="page-container dashboard-page">
@@ -197,21 +244,31 @@ const Dashboard = () => {
             <button className="view-all-btn" onClick={() => navigate('/portfolio')}>View All</button>
           </div>
           <div className="transactions-list">
-            {recentTransactions.map(tx => (
-              <div key={tx.id} className="tx-item">
-                <div className={`tx-badge ${tx.type}`}>{tx.type === 'buy' ? '↑' : '↓'}</div>
-                <div className="tx-info">
-                  <div className="tx-stock">{tx.stock}</div>
-                  <div className="tx-meta">{tx.qty} shares · {tx.date}</div>
-                </div>
-                <div className="tx-amount">
-                  <div className={tx.type === 'buy' ? 'loss' : 'profit'}>
-                    {tx.type === 'buy' ? '-' : '+'}₹{tx.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            {(recentTx.length > 0 ? recentTx : recentTransactions).map((tx, idx) => {
+              // Normalize backend shape vs mock shape
+              const type   = (tx.type || '').toLowerCase();
+              const isBuy  = type === 'buy';
+              const symbol = tx.symbol || tx.stock || '?';
+              const qty    = tx.quantity || tx.qty || 0;
+              const price  = tx.price || 0;
+              const total  = tx.totalAmount || tx.total || (price * qty);
+              const date   = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN') : (tx.date || '');
+              return (
+                <div key={tx.id || idx} className="tx-item">
+                  <div className={`tx-badge ${isBuy ? 'buy' : 'sell'}`}>{isBuy ? '↑' : '↓'}</div>
+                  <div className="tx-info">
+                    <div className="tx-stock">{symbol}</div>
+                    <div className="tx-meta">{qty} shares · {date}</div>
                   </div>
-                  <div className="tx-price">@ ₹{tx.price.toLocaleString('en-IN')}</div>
+                  <div className="tx-amount">
+                    <div className={isBuy ? 'loss' : 'profit'}>
+                      {isBuy ? '-' : '+'}₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="tx-price">@ ₹{price.toLocaleString('en-IN')}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

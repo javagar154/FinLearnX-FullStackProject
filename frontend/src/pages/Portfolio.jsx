@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { STOCKS, generatePriceHistory } from '../data/stocks';
+import { tradingService } from '../services/tradingService';
 import './Portfolio.css';
 
 const Portfolio = () => {
   const navigate = useNavigate();
-  const [portfolio] = useState(JSON.parse(localStorage.getItem('finlearnx_portfolio') || '[]'));
-  const wallet = parseFloat(localStorage.getItem('finlearnx_wallet') || '100000');
+  const [portfolio, setPortfolio] = useState(JSON.parse(localStorage.getItem('finlearnx_portfolio') || '[]'));
+  const [wallet, setWallet] = useState(parseFloat(localStorage.getItem('finlearnx_wallet') || '100000'));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [holdingsRes, balanceRes] = await Promise.allSettled([
+          tradingService.getPortfolio(),
+          tradingService.getWallet(),
+        ]);
+        if (holdingsRes.status === 'fulfilled' && Array.isArray(holdingsRes.value)) {
+          const mapped = holdingsRes.value.map(h => ({
+            symbol: h.symbol, name: h.stockName,
+            qty: h.quantity, avgPrice: h.averagePrice,
+          }));
+          setPortfolio(mapped);
+          localStorage.setItem('finlearnx_portfolio', JSON.stringify(mapped));
+        }
+        if (balanceRes.status === 'fulfilled') {
+          setWallet(balanceRes.value);
+          localStorage.setItem('finlearnx_wallet', String(balanceRes.value));
+        }
+      } catch {
+        // Fallback to localStorage cache
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const holdings = portfolio.map(h => {
     const stock = STOCKS.find(s => s.symbol === h.symbol);

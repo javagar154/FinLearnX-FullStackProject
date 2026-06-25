@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PREMIUM_COURSES } from '../data/premiumCourses';
 import { COURSE_PAGES, getPages } from '../data/premiumPages';
+import { courseService } from '../services/courseService';
 import { toast } from 'react-toastify';
 import './PremiumReader.css';
 
@@ -78,6 +79,8 @@ const PremiumReader = () => {
     const newProg = { ...progress, [`premium_${courseId}`]: pct };
     setProgress(newProg);
     localStorage.setItem('flx_progress', JSON.stringify(newProg));
+    // Sync to backend (fire-and-forget)
+    courseService.saveProgress(`premium_${courseId}`, pct, updated.size).catch(() => {});
     if (currentPage < pages.length - 1) { nextPage(); }
     else toast.success('🎉 Course complete! Take the quiz to earn your badge.');
   };

@@ -25,39 +25,56 @@ import PremiumQuiz from './pages/PremiumQuiz';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    // Router MUST wrap AuthProvider so hooks like useNavigate
+    // are available anywhere inside the tree
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          {/* Public routes */}
+          <Route path="/login"          element={<Login />} />
+          <Route path="/signup"         element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
+          {/* Protected routes */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="stocks" element={<StockMarket />} />
-            <Route path="stocks/:symbol" element={<StockDetail />} />
-            <Route path="sip-calculator" element={<SIPCalculator />} />
-            <Route path="budget" element={<BudgetTracker />} />
-            <Route path="learn" element={<LearningHub />} />
-            <Route path="learn/:courseId" element={<CourseViewer />} />
-            <Route path="learn/:courseId/:level" element={<CourseViewer />} />
-            <Route path="portfolio" element={<Portfolio />} />
-            <Route path="quiz/:courseId" element={<Quiz />} />
-            <Route path="quiz/:courseId/:level" element={<Quiz />} />
-            <Route path="premium" element={<PremiumHub />} />
-            <Route path="premium/:courseId" element={<PremiumReader />} />
-            <Route path="premium-quiz/:courseId" element={<PremiumQuiz />} />
+            <Route index                              element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard"                  element={<Dashboard />} />
+            <Route path="stocks"                     element={<StockMarket />} />
+            <Route path="stocks/:symbol"             element={<StockDetail />} />
+            <Route path="sip-calculator"             element={<SIPCalculator />} />
+            <Route path="budget"                     element={<BudgetTracker />} />
+            <Route path="learn"                      element={<LearningHub />} />
+            <Route path="learn/:courseId"            element={<CourseViewer />} />
+            <Route path="learn/:courseId/:level"     element={<CourseViewer />} />
+            <Route path="portfolio"                  element={<Portfolio />} />
+            <Route path="quiz/:courseId"             element={<Quiz />} />
+            <Route path="quiz/:courseId/:level"      element={<Quiz />} />
+            <Route path="premium"                    element={<PremiumHub />} />
+            <Route path="premium/:courseId"          element={<PremiumReader />} />
+            <Route path="premium-quiz/:courseId"     element={<PremiumQuiz />} />
           </Route>
 
+          {/* Catch-all → dashboard (will redirect to login if not authed) */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
 
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false}
-          newestOnTop closeOnClick pauseOnHover theme="dark"
-          toastStyle={{ background: 'rgba(15,15,45,0.95)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '12px', color: '#f1f5f9' }} />
-      </Router>
-    </AuthProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          theme="dark"
+          toastStyle={{
+            background: 'rgba(15,15,45,0.95)',
+            border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: '12px',
+            color: '#f1f5f9'
+          }}
+        />
+      </AuthProvider>
+    </Router>
   );
 }
 

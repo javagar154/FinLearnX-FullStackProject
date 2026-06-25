@@ -1,15 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BASIC_COURSES, INTERMEDIATE_COURSES } from '../../data/courses';
-import { PREMIUM_COURSES } from '../../data/premiumCourses';
-import { STOCKS } from '../../data/stocks';
+import { searchService } from '../../services/searchService';
 import './GlobalSearch.css';
-
-const ALL_COURSES = [
-  ...BASIC_COURSES.map(c => ({ ...c, type: 'course', level: 'Basic', path: `/learn/${c.id}` })),
-  ...INTERMEDIATE_COURSES.map(c => ({ ...c, type: 'course', level: 'Intermediate', path: `/learn/${c.id}` })),
-  ...PREMIUM_COURSES.map(c => ({ ...c, type: 'premium', level: 'Advanced', path: `/premium/${c.id}` })),
-];
 
 const GlobalSearch = () => {
   const [query, setQuery] = useState('');
@@ -44,31 +36,32 @@ const GlobalSearch = () => {
     setQuery(q);
     if (!q.trim()) { setResults([]); setOpen(false); return; }
     const lower = q.toLowerCase();
-    const courseResults = ALL_COURSES.filter(c =>
-      c.title.toLowerCase().includes(lower) ||
-      c.description?.toLowerCase().includes(lower) ||
-      c.topics?.some(t => t.toLowerCase().includes(lower))
-    ).slice(0, 4).map(c => ({
-      id: c.id, title: c.title, subtitle: c.level + ' Course',
-      icon: c.icon, type: c.type, path: c.path,
-      badge: c.type === 'premium' ? '👑' : '📚',
-    }));
 
-    const stockResults = STOCKS.filter(s =>
-      s.symbol.toLowerCase().includes(lower) ||
-      s.name.toLowerCase().includes(lower) ||
-      s.sector.toLowerCase().includes(lower)
-    ).slice(0, 4).map(s => ({
-      id: s.symbol, title: s.symbol, subtitle: s.name,
-      icon: '📈', type: 'stock', path: `/stocks/${s.symbol}`,
-      badge: s.changePercent >= 0 ? `+${s.changePercent.toFixed(2)}%` : `${s.changePercent.toFixed(2)}%`,
-      badgeColor: s.changePercent >= 0 ? '#00ff88' : '#ff4757',
-    }));
-
-    const combined = [...courseResults, ...stockResults];
-    setResults(combined);
-    setOpen(combined.length > 0);
-    setFocused(0);
+    // Use backend API (debounced via setTimeout)
+    clearTimeout(window._searchTimer);
+    window._searchTimer = setTimeout(async () => {
+      try {
+        const data = await searchService.publicSearch(q);
+        const courseResults = (data.courses || []).slice(0, 4).map(c => ({
+          id: c.id, title: c.title,
+          subtitle: (c.type === 'premium' ? 'Premium' : c.type === 'basic' ? 'Basic' : 'Intermediate') + ' Course',
+          icon: c.icon || '📚', type: c.type, path: c.path,
+          badge: c.type === 'premium' ? '👑' : '📚',
+        }));
+        const stockResults = (data.stocks || []).slice(0, 4).map(s => ({
+          id: s.symbol, title: s.symbol, subtitle: s.name,
+          icon: '📈', type: 'stock', path: `/stocks/${s.symbol}`,
+          badge: '', badgeColor: '#00ff88',
+        }));
+        const combined = [...courseResults, ...stockResults];
+        setResults(combined);
+        setOpen(combined.length > 0);
+        setFocused(0);
+      } catch {
+        // Fallback to empty — don't crash on network error
+        setResults([]); setOpen(false);
+      }
+    }, 300);
   };
 
   const handleKeyDown = (e) => {

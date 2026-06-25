@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BASIC_COURSES, INTERMEDIATE_COURSES } from '../data/courses';
 import { FREE_QUIZZES } from '../data/freeQuizzes';
+import { quizService } from '../services/quizService';
+import { courseService } from '../services/courseService';
 import { toast } from 'react-toastify';
 import './Quiz.css';
 
@@ -44,10 +46,14 @@ const Quiz = () => {
     } else {
       const score = ans.filter((a, i) => a === questions[i]?.ans).length;
       const pct = Math.round((score / questions.length) * 100);
+      // Save locally
       const prog = JSON.parse(localStorage.getItem('flx_progress') || '{}');
       prog[`quiz_${courseId}`] = pct;
       if (pct === 100) prog[courseId] = 100;
       localStorage.setItem('flx_progress', JSON.stringify(prog));
+      // Submit to backend (fire-and-forget)
+      quizService.submitQuiz(courseId, score, questions.length).catch(() => {});
+      courseService.saveQuizScore(courseId, pct).catch(() => {});
       setPhase('result');
     }
   };
