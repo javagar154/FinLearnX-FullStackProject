@@ -62,12 +62,13 @@ const StockDetail = () => {
       localStorage.setItem('finlearnx_wallet', String(newBalance));
       refreshWallet();
 
-      // Refresh portfolio from backend
+      // Refresh portfolio from backend so Portfolio page shows updated holdings
       const newPortfolio = await tradingService.getPortfolio();
-      // Map backend response to shape used by UI
       const mapped = newPortfolio.map(h => ({
-        symbol: h.symbol, name: h.stockName,
-        qty: h.quantity, avgPrice: h.averagePrice,
+        symbol:   h.symbol,
+        name:     h.stockName,
+        qty:      h.quantity,
+        avgPrice: h.averagePrice,
       }));
       setPortfolio(mapped);
       localStorage.setItem('finlearnx_portfolio', JSON.stringify(mapped));

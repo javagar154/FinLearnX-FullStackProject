@@ -19,9 +19,12 @@ const Portfolio = () => {
           tradingService.getWallet(),
         ]);
         if (holdingsRes.status === 'fulfilled' && Array.isArray(holdingsRes.value)) {
+          // Backend now returns PortfolioDto: { symbol, stockName, quantity, averagePrice }
           const mapped = holdingsRes.value.map(h => ({
-            symbol: h.symbol, name: h.stockName,
-            qty: h.quantity, avgPrice: h.averagePrice,
+            symbol:    h.symbol,
+            name:      h.stockName,
+            qty:       h.quantity,
+            avgPrice:  h.averagePrice,
           }));
           setPortfolio(mapped);
           localStorage.setItem('finlearnx_portfolio', JSON.stringify(mapped));
