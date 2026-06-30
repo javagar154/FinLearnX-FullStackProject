@@ -6,7 +6,7 @@
   padding: 7px 10px; font-size: 16px; cursor: pointer;
   transition: all .2s; display: flex; align-items: center;
 }
-.nb-btn:hover { background: rgba(99,102,241,.15); border-color: var(--accent-blue); }
+.nb-btn:hover { background: rgba(145, 145, 147, 0.15); border-color: var(--accent-blue); }
 .nb-btn.pulse { animation: nbPulse .6s ease; }
 @keyframes nbPulse {
   0%,100% { transform: scale(1); }
@@ -30,7 +30,7 @@
 .nb-panel {
   position: absolute; top: calc(100% + 10px); right: 0;
   width: 340px; max-height: 480px;
-  background: rgba(12,12,30,.98); border: 1px solid rgba(99,102,241,.25);
+  background: rgba(228, 228, 235, 0.98); border: 1px solid rgba(99,102,241,.25);
   border-radius: var(--radius-xl); overflow: hidden;
   box-shadow: 0 16px 48px rgba(0,0,0,.6);
   backdrop-filter: blur(20px); z-index: 200;
